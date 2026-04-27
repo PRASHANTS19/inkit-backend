@@ -1,9 +1,9 @@
-package com.inkit.backend.task.entity;
+package com.inkit.backend.task;
 import java.time.LocalDate;
 import java.util.UUID;
 
 import com.inkit.backend.auth.User;
-import com.inkit.backend.case_mgmt.entity.Case;
+import com.inkit.backend.case_mgmt.Case;
 import com.inkit.backend.common.enums.TaskPriority;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

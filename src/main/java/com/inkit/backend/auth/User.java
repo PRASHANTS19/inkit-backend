@@ -1,4 +1,5 @@
 package com.inkit.backend.auth;
+
 import java.util.UUID;
 import jakarta.annotation.Generated;
 import jakarta.persistence.Entity;
@@ -16,6 +17,7 @@ import lombok.Setter;
 
 import com.inkit.backend.common.enums.Role;
 import com.inkit.backend.firm.Firm;
+
 @Entity
 @Getter
 @Setter
@@ -37,6 +39,10 @@ public class User {
     private String city;
     private String state;
     private String pinCode;
+    private boolean isActive;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @ManyToOne
     private Firm firm;

@@ -1,4 +1,4 @@
-package com.inkit.backend.case_mgmt.entity;
+package com.inkit.backend.case_mgmt;
 import java.util.UUID;
 
 import com.inkit.backend.auth.User;

@@ -5,9 +5,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Builder;
 
 @Entity
 @Table(name = "firms")
+@Builder
 public class Firm {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -16,6 +18,10 @@ public class Firm {
 
     public Firm() {}
     public Firm(String name) {
+        this.name = name;
+    }
+    public Firm(UUID id, String name) {
+        this.id = id;
         this.name = name;
     }
     public UUID getID(){
