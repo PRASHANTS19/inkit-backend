@@ -1,6 +1,6 @@
 package com.inkit.backend.common.enums;
 
-public enum TaskPriority {
+public enum Priority {
     HIGH,
     MEDIUM,
     LOW
