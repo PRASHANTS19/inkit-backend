@@ -2,6 +2,7 @@ package com.inkit.backend.case_mgmt;
 import java.util.UUID;
 
 import com.inkit.backend.auth.User;
+import com.inkit.backend.client.Client;
 import com.inkit.backend.common.enums.CaseType;
 import com.inkit.backend.common.enums.Court;
 import com.inkit.backend.common.enums.Priority;
@@ -47,5 +48,5 @@ public class Case {
   private User assignedTo;
 
   @ManyToOne
-  private Firm firm;
+  private Client client;
 }

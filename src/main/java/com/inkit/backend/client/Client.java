@@ -1,23 +1,19 @@
-package com.inkit.backend.auth;
+package com.inkit.backend.client;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.inkit.backend.client.Client;
+import com.inkit.backend.auth.User;
 import com.inkit.backend.common.enums.Role;
-import com.inkit.backend.firm.Firm;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,32 +27,24 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "users")
-public class User {
+@Table(name = "client")
+public class Client {
     @Id
     @GeneratedValue
     private UUID id;
     private String name;
     private String email;
-    private String password;
-    private String barRegistrationNumber;
-    private String YOE;
-    private String areaOfSpecialization;
+    private String phoneNumber;
     private String streetAddress;
     private String city;
     private String state;
     private String pinCode;
-    private boolean isActive;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @ManyToOne
-    private Firm firm;
-
     @JsonIgnore
     @Builder.Default
-    @ManyToMany
-    @JoinTable(name = "user_clients", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "client_id"))
-    private Set<Client> clients = new HashSet<>();
+    @ManyToMany(mappedBy = "clients")
+    private Set<User> users = new HashSet<>();
 }
