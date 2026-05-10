@@ -71,6 +71,11 @@ public class UserManagementService {
         return toSummary(user);
     }
 
+    public UserSummaryResponse getCurrentUser(String requesterEmail) {
+        User user = getUserByEmail(requesterEmail);
+        return toSummary(user);
+    }
+
     public UserSummaryResponse updateUser(String requesterEmail, UUID userId, UpdateManagedUserRequest request) {
         User requester = getUserByEmail(requesterEmail);
         ensureRole(requester, Role.FIRM_ADMIN);

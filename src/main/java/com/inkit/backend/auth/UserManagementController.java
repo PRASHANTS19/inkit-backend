@@ -35,6 +35,12 @@ public class UserManagementController {
         return userManagementService.listUsers(userDetails.getUsername(), accountType, firmAdminId);
     }
 
+    @GetMapping("/me")
+    public UserSummaryResponse me(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return userManagementService.getCurrentUser(userDetails.getUsername());
+    }
+
     @PostMapping("/filter")
     public List<UserSummaryResponse> filterUsers(
             @AuthenticationPrincipal UserDetails userDetails,

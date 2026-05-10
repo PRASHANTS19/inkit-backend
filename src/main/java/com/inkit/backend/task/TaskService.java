@@ -34,10 +34,10 @@ public class TaskService {
             String sortBy, Integer limit) {
         User user = getUserByEmail(userEmail);
 
-        Specification<Task> spec = roleScopeSpec(user)
-                .and(uuidEquals("caseRef", caseId))
-                .and(enumEquals("status", status, Status.class))
-                .and(uuidEquals("assignedTo", assignedTo));
+        Specification<Task> spec = roleScopeSpec(user);
+        spec = andIfPresent(spec, uuidEquals("caseRef", caseId));
+        spec = andIfPresent(spec, enumEquals("status", status, Status.class));
+        spec = andIfPresent(spec, uuidEquals("assignedTo", assignedTo));
 
         Pageable pageable = PageRequest.of(0, sanitizeLimit(limit), parseSort(sortBy));
         return taskRepository.findAll(spec, pageable).getContent().stream().map(this::toResponse).toList();
@@ -46,7 +46,8 @@ public class TaskService {
     public List<TaskResponse> filterTasks(String userEmail, TaskFilterRequest request) {
         User user = getUserByEmail(userEmail);
 
-        Specification<Task> spec = roleScopeSpec(user).and(filterMapSpec(request.getFilter()));
+        Specification<Task> spec = roleScopeSpec(user);
+        spec = andIfPresent(spec, filterMapSpec(request.getFilter()));
         Pageable pageable = PageRequest.of(0, sanitizeLimit(request.getLimit()), parseSort(request.getSortBy()));
 
         return taskRepository.findAll(spec, pageable).getContent().stream().map(this::toResponse).toList();
@@ -196,6 +197,13 @@ public class TaskService {
 
     private String stringValue(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private Specification<Task> andIfPresent(Specification<Task> base, Specification<Task> other) {
+        if (base == null) {
+            return other;
+        }
+        return other == null ? base : base.and(other);
     }
 
     private int sanitizeLimit(Integer limit) {
