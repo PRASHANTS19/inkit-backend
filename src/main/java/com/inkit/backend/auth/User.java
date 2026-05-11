@@ -45,6 +45,7 @@ public class User {
     private UUID id;
     private String name;
     private String email;
+    @JsonIgnore
     private String password;
     private String barRegistrationNumber;
     private String phone;
@@ -66,10 +67,12 @@ public class User {
     private Firm firm;
 
     @ManyToOne
+    @JsonIgnore
     private User firmAdmin;
 
     @Builder.Default
     @OneToMany(mappedBy = "firmAdmin")
+    @JsonIgnore
     private Set<User> associates = new HashSet<>();
 
     @JsonIgnore

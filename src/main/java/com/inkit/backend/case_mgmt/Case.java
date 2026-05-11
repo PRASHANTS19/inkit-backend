@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.inkit.backend.auth.User;
 import com.inkit.backend.client.Client;
 import com.inkit.backend.common.enums.CaseType;
@@ -41,15 +42,20 @@ public class Case {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @JsonProperty("case_title")
     private String caseTitle;
+    @JsonProperty("case_number")
     private String caseNumber;
+    @JsonProperty("client_name")
     private String clientName;
+    @JsonProperty("client_contact")
     private String clientContact;
 
     @Enumerated(EnumType.STRING)
     private Court court;
 
     @Enumerated(EnumType.STRING)
+    @JsonProperty("case_type")
     private CaseType caseType;
 
     @Enumerated(EnumType.STRING)
@@ -58,10 +64,15 @@ public class Case {
     @Enumerated(EnumType.STRING)
     private Priority priority;
 
+    @JsonProperty("next_hearing_date")
     private LocalDate nextHearingDate;
+    @JsonProperty("case_description")
     private String caseDescription;
+    @JsonProperty("opposing_counsel")
     private String opposingCounsel;
+    @JsonProperty("case_value")
     private Double caseValue;
+    @JsonProperty("filing_date")
     private LocalDate filingDate;
     private String tags;
 

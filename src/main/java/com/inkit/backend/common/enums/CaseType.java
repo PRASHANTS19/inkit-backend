@@ -24,6 +24,11 @@ public enum CaseType {
         if (normalized.equals("LABOR")) {
             return Labour;
         }
-        return Enum.valueOf(CaseType.class, normalized);
+        for (CaseType caseType : CaseType.values()) {
+            if (caseType.name().toUpperCase().equals(normalized)) {
+                return caseType;
+            }
+        }
+        throw new IllegalArgumentException("Unknown case type value: " + value);
     }
 }

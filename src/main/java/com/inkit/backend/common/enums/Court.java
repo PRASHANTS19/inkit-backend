@@ -24,6 +24,11 @@ public enum Court {
         if (normalized.equals("MAGISTRATE_COURT") || normalized.equals("MEGISTRATE_COURT") || normalized.equals("MAGISTRATECOURT") || normalized.equals("MEGISTRATECOURT")) {
             return Megistrate_Court;
         }
-        return Enum.valueOf(Court.class, normalized);
+        for (Court court : Court.values()) {
+            if (court.name().toUpperCase().equals(normalized)) {
+                return court;
+            }
+        }
+        throw new IllegalArgumentException("Unknown court value: " + value);
     }
 }
