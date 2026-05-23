@@ -1,18 +1,12 @@
-package com.inkit.backend.task;
+package com.inkit.backend.hearing;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.inkit.backend.auth.User;
 import com.inkit.backend.case_mgmt.Case;
-import com.inkit.backend.common.enums.Priority;
-import com.inkit.backend.common.enums.Status;
 import com.inkit.backend.firm.Firm;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -27,41 +21,28 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "tasks")
+@Table(name = "hearings")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Task {
+public class Hearing {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String title;
-    private String description;
-    private LocalDate dueDate;
-
-    @Enumerated(EnumType.STRING)
-    private Priority priority;
-
-    @Enumerated(EnumType.STRING)
-    private Status status;
-
-    private String taskType;
-    private Double estimatedHours;
-    private Double actualHours;
+    private LocalDateTime hearingDate;
+    private String status;
+    private String courtroom;
+    private String hearingType;
     private String notes;
-    private Boolean reminderSent;
-
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
 
     @ManyToOne
     private Case caseRef;
-
-    @ManyToOne
-    private User assignedTo;
 
     @ManyToOne
     private Firm firm;
@@ -71,15 +52,6 @@ public class Task {
         LocalDateTime now = LocalDateTime.now();
         createdDate = now;
         updatedDate = now;
-        if (status == null) {
-            status = Status.PENDING;
-        }
-        if (priority == null) {
-            priority = Priority.MEDIUM;
-        }
-        if (reminderSent == null) {
-            reminderSent = false;
-        }
     }
 
     @PreUpdate

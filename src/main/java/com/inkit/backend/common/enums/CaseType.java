@@ -1,5 +1,7 @@
 package com.inkit.backend.common.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum CaseType {
     Civil,
     Criminal,
@@ -10,5 +12,23 @@ public enum CaseType {
     Tax,
     Constitutional,
     Writ,
-    Other
+    Other;
+
+    @JsonCreator
+    public static CaseType fromString(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim().replace('-', '_').replace(' ', '_').toUpperCase();
+        if (normalized.equals("LABOR")) {
+            return Labour;
+        }
+        for (CaseType caseType : CaseType.values()) {
+            if (caseType.name().toUpperCase().equals(normalized)) {
+                return caseType;
+            }
+        }
+        throw new IllegalArgumentException("Unknown case type value: " + value);
+    }
 }

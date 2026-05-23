@@ -1,4 +1,4 @@
-package com.inkit.backend.case_mgmt;
+package com.inkit.backend.invoice;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,65 +15,64 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.inkit.backend.case_mgmt.dto.CaseFilterRequest;
+import com.inkit.backend.invoice.dto.InvoiceFilterRequest;
+import com.inkit.backend.invoice.dto.InvoiceResponse;
+import com.inkit.backend.invoice.dto.InvoiceUpsertRequest;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/cases")
+@RequestMapping("/api/invoices")
 @RequiredArgsConstructor
-public class CaseController {
+public class InvoiceController {
 
-    private final CaseService caseService;
+    private final InvoiceService invoiceService;
 
     @GetMapping
-    public List<Case> listCases(
+    public List<InvoiceResponse> listInvoices(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(defaultValue = "-createdDate") String sortBy,
-            @RequestParam(defaultValue = "50") Integer limit,
+            @RequestParam(required = false, name = "case_id") String caseId,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false, name = "case_type") String caseType,
-            @RequestParam(required = false) String priority,
-            @RequestParam(required = false, name = "client_name") String clientName,
-            @RequestParam(required = false) String search) {
-        return caseService.listCases(userDetails.getUsername(), sortBy, limit, status, caseType, priority, clientName,
-                search);
+            @RequestParam(defaultValue = "-created_date") String sortBy,
+            @RequestParam(defaultValue = "50") Integer limit) {
+        return invoiceService.listInvoices(userDetails.getUsername(), caseId, status, sortBy, limit);
     }
 
     @PostMapping("/filter")
-    public List<Case> filterCases(
+    public List<InvoiceResponse> filterInvoices(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody CaseFilterRequest request) {
-        return caseService.filterCases(userDetails.getUsername(), request);
+            @RequestBody InvoiceFilterRequest request) {
+        return invoiceService.filterInvoices(userDetails.getUsername(), request);
     }
 
     @GetMapping("/{id}")
-    public Case getCaseById(
+    public InvoiceResponse getInvoice(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID id) {
-        return caseService.getCaseById(userDetails.getUsername(), id);
+        return invoiceService.getById(userDetails.getUsername(), id);
     }
 
     @PostMapping
-    public Case createCase(
+    public InvoiceResponse createInvoice(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Case request) {
-        return caseService.createCase(userDetails.getUsername(), request);
+            @RequestBody InvoiceUpsertRequest request) {
+        return invoiceService.create(userDetails.getUsername(), request);
     }
 
     @PutMapping("/{id}")
-    public Case updateCase(
+    public InvoiceResponse updateInvoice(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID id,
-            @RequestBody Case request) {
-        return caseService.updateCase(userDetails.getUsername(), id, request);
+            @RequestBody InvoiceUpsertRequest request) {
+        return invoiceService.update(userDetails.getUsername(), id, request);
     }
 
     @DeleteMapping("/{id}")
-    public String deleteCase(
+    public String deleteInvoice(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID id) {
-        caseService.deleteCase(userDetails.getUsername(), id);
-        return "Case deleted successfully";
+        invoiceService.delete(userDetails.getUsername(), id);
+        return "Invoice deleted successfully";
     }
 }
+

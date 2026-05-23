@@ -1,4 +1,4 @@
-package com.inkit.backend.case_mgmt;
+package com.inkit.backend.task;
 
 import java.util.UUID;
 
@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CaseRepository extends JpaRepository<Case, UUID>, JpaSpecificationExecutor<Case> {
+public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificationExecutor<Task> {
 }
