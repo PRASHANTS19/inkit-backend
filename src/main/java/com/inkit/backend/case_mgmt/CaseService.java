@@ -1,5 +1,8 @@
 package com.inkit.backend.case_mgmt;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,19 +19,27 @@ import org.springframework.web.server.ResponseStatusException;
 import com.inkit.backend.auth.User;
 import com.inkit.backend.auth.UserRepository;
 import com.inkit.backend.case_mgmt.dto.CaseFilterRequest;
+import com.inkit.backend.case_mgmt.dto.ECourtResponse;
+import com.inkit.backend.case_mgmt.CaseSyncService;
 import com.inkit.backend.common.enums.CaseType;
 import com.inkit.backend.common.enums.Priority;
 import com.inkit.backend.common.enums.Role;
 import com.inkit.backend.common.enums.Status;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CaseService {
 
     private final CaseRepository caseRepository;
     private final UserRepository userRepository;
+    private final CaseSyncService caseSyncService;
+
+    private static final DateTimeFormatter EC_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public List<Case> listCases(String userEmail, String sortBy, Integer limit, String status,
             String caseType, String priority, String clientName, String search) {
@@ -55,13 +66,43 @@ public class CaseService {
         return caseRepository.findAll(spec, pageable).getContent();
     }
 
+    @Transactional
     public Case getCaseById(String userEmail, UUID caseId) {
+
         User user = getUserByEmail(userEmail);
+
         Case caseData = caseRepository.findById(caseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Case not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Case not found"));
 
         if (!isAccessible(user, caseData)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot access this case");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You cannot access this case");
+        }
+
+        // Sync only once per day
+        if (caseSyncService.shouldSyncFromEcourt(caseData)) {
+
+            try {
+                System.out.println("Syncing case data from eCourt for case: " + caseData.getId());
+                syncCaseData(caseData);
+                caseRepository.save(caseData);
+                return caseRepository.findById(caseId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Case not found"));
+
+            } catch (Exception ex) {
+
+                log.error(
+                        "Failed to sync case {} from eCourt",
+                        caseData.getId(),
+                        ex);
+
+                // Continue returning DB data
+            }
         }
 
         return caseData;
@@ -91,6 +132,9 @@ public class CaseService {
 
         existing.setCaseTitle(request.getCaseTitle());
         existing.setCaseNumber(request.getCaseNumber());
+        existing.setCnrNumber(request.getCnrNumber());
+        existing.setRegistrationNumber(request.getRegistrationNumber());
+        existing.setFilingNumber(request.getFilingNumber());
         existing.setClientName(request.getClientName());
         existing.setClientContact(request.getClientContact());
         existing.setCourt(request.getCourt());
@@ -106,6 +150,100 @@ public class CaseService {
         existing.setAssignedTo(request.getAssignedTo());
         existing.setClient(request.getClient());
         existing.setFirm(request.getFirm() != null ? request.getFirm() : existing.getFirm());
+
+        return caseRepository.save(existing);
+    }
+
+    private void syncCaseData(Case existing) {
+
+        ECourtResponse response = caseSyncService.fetchFromECourt(existing.getCnrNumber());
+
+        if (response == null ||
+                response.getData() == null ||
+                response.getData().getCourtCaseData() == null) {
+            return;
+        }
+
+        applyECourtData(existing, response.getData().getCourtCaseData());
+        existing.setLastEcourtSync(LocalDateTime.now());
+    }
+
+    /**
+     * Applies all mappable eCourt API fields onto an existing Case entity.
+     * Called both from the daily auto-sync and the manual syncWithECourt endpoint.
+     */
+    private void applyECourtData(Case existing, ECourtResponse.CourtCaseData apiData) {
+
+        // Reconstruct display case number from cnrCaseNumber + cnrYear (e.g.
+        // "019992/2026")
+        if (apiData.getCnrCaseNumber() != null && apiData.getCnrYear() != null) {
+            existing.setCaseNumber(apiData.getCnrCaseNumber() + "/" + apiData.getCnrYear());
+        }
+
+        if (apiData.getRegistrationNumber() != null) {
+            existing.setRegistrationNumber(apiData.getRegistrationNumber());
+        }
+
+        if (apiData.getFilingNumber() != null) {
+            existing.setFilingNumber(apiData.getFilingNumber());
+        }
+
+        // Use filingDate from the API directly (not registrationDate)
+        if (apiData.getFilingDate() != null && !apiData.getFilingDate().isBlank()) {
+            existing.setFilingDate(LocalDate.parse(apiData.getFilingDate(), EC_DATE_FORMAT));
+        }
+
+        if (apiData.getNextHearingDate() != null && !apiData.getNextHearingDate().isBlank()) {
+            existing.setNextHearingDate(LocalDate.parse(apiData.getNextHearingDate(), EC_DATE_FORMAT));
+        }
+
+        // eCourt-specific status and case type (stored as raw strings, separate from
+        // internal enums)
+        if (apiData.getCaseStatus() != null) {
+            existing.setEcourtCaseStatus(apiData.getCaseStatus()); // e.g. "HEARING"
+        }
+
+        if (apiData.getCaseType() != null) {
+            existing.setEcourtCaseType(apiData.getCaseType()); // e.g. "SLP_CRL"
+        }
+
+        // Store list fields as pipe-separated strings
+        existing.setJudges(joinList(apiData.getJudges()));
+        existing.setPetitioners(joinList(apiData.getPetitioners()));
+        existing.setPetitionerAdvocates(joinList(apiData.getPetitionerAdvocates()));
+        existing.setRespondents(joinList(apiData.getRespondents()));
+        existing.setRespondentAdvocates(joinList(apiData.getRespondentAdvocates()));
+    }
+
+    /**
+     * Joins a list of strings into a pipe-separated value, or returns null if the
+     * list is empty/null.
+     */
+    private String joinList(List<String> items) {
+        if (items == null || items.isEmpty()) {
+            return null;
+        }
+        return String.join("|", items);
+    }
+
+    public Case syncWithECourt(String userEmail, UUID caseId) {
+        User user = getUserByEmail(userEmail);
+        Case existing = caseRepository.findById(caseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Case not found"));
+
+        if (!isAccessible(user, existing)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot sync this case");
+        }
+
+        if (existing.getCnrNumber() == null || existing.getCnrNumber().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CNR Number is required for syncing");
+        }
+
+        ECourtResponse response = caseSyncService.fetchFromECourt(existing.getCnrNumber());
+        if (response != null && response.getData() != null && response.getData().getCourtCaseData() != null) {
+            applyECourtData(existing, response.getData().getCourtCaseData());
+            existing.setLastEcourtSync(LocalDateTime.now());
+        }
 
         return caseRepository.save(existing);
     }

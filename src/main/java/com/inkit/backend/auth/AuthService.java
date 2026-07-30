@@ -47,25 +47,47 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
         }
 
-        // 🔹 create default firm
-        String firmName = request.getEmail().split("@")[0] + " Firm";
+        // Determine role from accountType field; default to INDEPENDENT if not provided
+        Role role = resolveRole(request.getAccountType());
 
-        Firm firm = Firm.builder()
-                .name(firmName)
-                .build();
-
-        firm = firmRepository.save(firm);
-
-        // 🔹 create user
-        User user = User.builder()
+        User.UserBuilder userBuilder = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.FIRM_ADMIN)
-                .isActive(true)
-                .firm(firm)
-                .build();
+                .name(request.getFullName())
+                .barRegistrationNumber(request.getBarNumber())
+                .role(role)
+                .isActive(true);
 
-        userRepository.save(user);
+        // Associates register themselves but belong to no firm yet —
+        // a law_firm_admin will invite/link them later.
+        // For all other self-registering roles, create a default firm.
+        if (role != Role.ASSOCIATE) {
+            String firmName = (request.getFirmName() != null && !request.getFirmName().isBlank())
+                    ? request.getFirmName()
+                    : request.getEmail().split("@")[0] + " Firm";
+
+            Firm firm = firmRepository.save(Firm.builder().name(firmName).build());
+            userBuilder.firm(firm);
+        }
+
+        userRepository.save(userBuilder.build());
+    }
+
+    /**
+     * Maps the frontend account_type string to the backend {@link Role} enum.
+     * Defaults to {@link Role#INDEPENDENT} when accountType is null or blank.
+     */
+    private Role resolveRole(String accountType) {
+        if (accountType == null || accountType.isBlank()) {
+            return Role.INDEPENDENT;
+        }
+        return switch (accountType.trim().toLowerCase()) {
+            case "law_firm_admin" -> Role.FIRM_ADMIN;
+            case "associate" -> Role.ASSOCIATE;
+            case "independent_advocate" -> Role.INDEPENDENT;
+            default -> throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Invalid account_type: " + accountType);
+        };
     }
 
     public void updateUser(String email, UpdateUserRequest request) {

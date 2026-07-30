@@ -9,10 +9,17 @@ import lombok.Setter;
 @Setter
 public class RegisterRequest {
 
-     @Email
+    @Email
     @NotBlank
     private String email;
 
     @NotBlank
     private String password;
+
+    /** Accepted values: independent_advocate, law_firm_admin, associate */
+    private String accountType;
+
+    private String fullName;
+    private String firmName;
+    private String barNumber;
 }

@@ -13,6 +13,7 @@ import com.inkit.backend.common.enums.Priority;
 import com.inkit.backend.common.enums.Status;
 import com.inkit.backend.firm.Firm;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -46,10 +47,43 @@ public class Case {
     private String caseTitle;
     @JsonProperty("case_number")
     private String caseNumber;
+    @JsonProperty("cnr_number")
+    private String cnrNumber;
+    @JsonProperty("registration_number")
+    private String registrationNumber;
+    @JsonProperty("filing_number")
+    private String filingNumber;
     @JsonProperty("client_name")
     private String clientName;
     @JsonProperty("client_contact")
     private String clientContact;
+    @JsonProperty("last_ecourt_sync")
+    private LocalDateTime lastEcourtSync;
+    @JsonProperty("ecourt_sync_status")
+    private String ecourtSyncStatus;
+
+    // eCourt API enriched fields
+    @JsonProperty("ecourt_case_type")
+    private String ecourtCaseType;       // raw API value e.g. "SLP_CRL"
+    @JsonProperty("ecourt_case_status")
+    private String ecourtCaseStatus;     // raw API value e.g. "HEARING"
+
+    @Column(columnDefinition = "TEXT")
+    private String judges;               // pipe-separated e.g. "K.V. VISWANATHAN|N.K. SINGH"
+
+    @Column(columnDefinition = "TEXT")
+    private String petitioners;          // pipe-separated
+
+    @Column(columnDefinition = "TEXT")
+    @JsonProperty("petitioner_advocates")
+    private String petitionerAdvocates;  // pipe-separated
+
+    @Column(columnDefinition = "TEXT")
+    private String respondents;          // pipe-separated
+
+    @Column(columnDefinition = "TEXT")
+    @JsonProperty("respondent_advocates")
+    private String respondentAdvocates;  // pipe-separated
 
     @Enumerated(EnumType.STRING)
     private Court court;
